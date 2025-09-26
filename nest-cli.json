@@ -1,14 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/order-microservices/src",
+  "monorepo": true,
+  "root": "apps",
   "compilerOptions": {
     "deleteOutDir": true,
-    "webpack": true,
-    "tsConfigPath": "apps/order-microservices/tsconfig.app.json"
+    "webpack": true
   },
-  "monorepo": true,
-  "root": "apps/order-microservices",
   "projects": {
     "aws-clients": {
       "type": "library",
@@ -26,15 +24,6 @@
       "sourceRoot": "libs/common-dto/src",
       "compilerOptions": {
         "tsConfigPath": "libs/common-dto/tsconfig.lib.json"
-      }
-    },
-    "order-microservices": {
-      "type": "application",
-      "root": "apps/order-microservices",
-      "entryFile": "main",
-      "sourceRoot": "apps/order-microservices/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/order-microservices/tsconfig.app.json"
       }
     },
     "order-notification": {
