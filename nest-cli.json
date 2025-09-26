@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/order-microservices/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/order-microservices/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/order-microservices",
+  "projects": {
+    "aws-clients": {
+      "type": "library",
+      "root": "libs/aws-clients",
+      "entryFile": "index",
+      "sourceRoot": "libs/aws-clients/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/aws-clients/tsconfig.lib.json"
+      }
+    },
+    "common-dto": {
+      "type": "library",
+      "root": "libs/common-dto",
+      "entryFile": "index",
+      "sourceRoot": "libs/common-dto/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/common-dto/tsconfig.lib.json"
+      }
+    },
+    "order-microservices": {
+      "type": "application",
+      "root": "apps/order-microservices",
+      "entryFile": "main",
+      "sourceRoot": "apps/order-microservices/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/order-microservices/tsconfig.app.json"
+      }
+    },
+    "order-notification": {
+      "type": "application",
+      "root": "apps/order-notification",
+      "entryFile": "main",
+      "sourceRoot": "apps/order-notification/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/order-notification/tsconfig.app.json"
+      }
+    },
+    "order-persistence": {
+      "type": "application",
+      "root": "apps/order-persistence",
+      "entryFile": "main",
+      "sourceRoot": "apps/order-persistence/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/order-persistence/tsconfig.app.json"
+      }
+    },
+    "order-producer": {
+      "type": "application",
+      "root": "apps/order-producer",
+      "entryFile": "main",
+      "sourceRoot": "apps/order-producer/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/order-producer/tsconfig.app.json"
+      }
+    }
+  }
+}
