@@ -27,7 +27,8 @@
     "localstack:setup": "ts-node --esm scripts/bootstrap-localstack.ts",
     "localstack:bootstrap": "npm run localstack:start && npm run localstack:setup",
     "localstack:env": "bash scripts/load-localstack-env.sh",
-    "ses-local:start": "aws-ses-v2-local"
+    "ses-local:start": "aws-ses-v2-local",
+    "dynamodb:admin": "DYNAMO_ENDPOINT=http://localhost:4566 npx dynamodb-admin"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.414.0",

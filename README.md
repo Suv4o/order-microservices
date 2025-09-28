@@ -76,15 +76,7 @@ npm run localstack:bootstrap
 
 The bootstrap script waits for LocalStack to become healthy, creates both queues, provisions the DynamoDB table, and attempts to verify the SES sender identity. If your LocalStack tier doesn’t emulate SESv2, set `SKIP_SES=true` (already enabled in `.env.localstack.example`) to suppress the identity step and rely solely on the local mock server.
 
-3. **Start the local SES mock server** in a separate terminal to capture emails:
-
-```bash
-npm run ses-local:start
-```
-
-> The server exposes the SESv2 API at `http://localhost:8005` and a web inbox at the same address. Leave it running while the notification worker is active. If you don’t want to send emails locally, set `SKIP_SES=true` before starting the services.
-
-4. **Load the generated environment variables** (zsh/bash):
+3. **Load the generated environment variables** (zsh/bash):
 
 ```bash
 npm run localstack:env
@@ -92,13 +84,7 @@ npm run localstack:env
 
 > The helper script wraps `set -a; source .env.localstack; set +a` so your current shell inherits every variable. You can pass an alternate file path, e.g. `source scripts/load-localstack-env.sh .env.other`. Running `npm run localstack:env` executes the same helper but, because it spawns a subshell, the exports won’t persist once the command finishes—always `source` it directly when you need the variables in your terminal.
 
-5. **Start the microservices in separate terminals** (after sourcing the env file for each terminal):
-
-6. **Start the local SES mock server** in a separate terminal to capture emails:
-
-```bash
-npm run ses-local:start
-```
+4. **Start the microservices in separate terminals** (after sourcing the env file for each terminal):
 
 ```bash
 npm run start:producer:dev
@@ -106,13 +92,29 @@ npm run start:persistence:dev
 npm run start:notification:dev
 ```
 
-1. **Inspect LocalStack logs** (optional):
+5. **Open a DynamoDB UI** (optional) to explore LocalStack tables:
+
+```bash
+npm run dynamodb:admin
+```
+
+> The script uses `npx dynamodb-admin` with `DYNAMO_ENDPOINT=http://localhost:4566`. Once it starts, open [http://localhost:8001](http://localhost:8001) to browse and edit table contents.
+
+6. **Start the local SES mock server** (run this before the notification worker processes messages):
+
+```bash
+npm run ses-local:start
+```
+
+> The server exposes the SESv2 API at `http://localhost:8005` and a web inbox at the same address. Leave it running while the notification worker is active. If you’ve already started it earlier, you can skip this step; otherwise, run it now before sending test orders. Set `SKIP_SES=true` if you prefer to suppress email sending locally.
+
+7. **Inspect LocalStack logs** (optional):
 
 ```bash
 npm run localstack:logs
 ```
 
-7. **Shut everything down** when finished:
+8. **Shut everything down** when finished:
 
 ```bash
 npm run localstack:stop
@@ -143,6 +145,9 @@ npm run start:notification
 
 # SES mock server – provides a local SESv2 API and inbox
 npm run ses-local:start
+
+# DynamoDB admin UI – browse LocalStack tables at http://localhost:8001
+npm run dynamodb:admin
 ```
 
 The producer exposes an injectable `OrderProducerService` with a `publishOrder` method. You can use it from a REPL or small script, e.g.:
