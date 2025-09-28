@@ -25,6 +25,8 @@ const notificationQueueName =
 const tableName = process.env.ORDERS_TABLE_NAME ?? 'orders-table';
 const notificationEmailFrom =
   process.env.NOTIFICATION_EMAIL_FROM ?? 'sender@example.com';
+const skipSesIdentityBootstrap =
+  (process.env.LOCALSTACK_SKIP_SES ?? '').toLowerCase() === 'true';
 
 const clientsConfig = {
   region,
@@ -137,6 +139,12 @@ async function ensureOrdersTable(): Promise<void> {
 }
 
 async function ensureSesIdentity(): Promise<void> {
+  if (skipSesIdentityBootstrap) {
+    console.warn(
+      'Skipping SES identity creation because LOCALSTACK_SKIP_SES is set to true.',
+    );
+    return;
+  }
   if (!notificationEmailFrom) {
     console.warn(
       'NOTIFICATION_EMAIL_FROM is not set. Skipping SES identity creation.',
@@ -154,6 +162,15 @@ async function ensureSesIdentity(): Promise<void> {
   } catch (error: unknown) {
     if (error instanceof Error && error.name === 'AlreadyExistsException') {
       console.log(`SES identity already exists: ${notificationEmailFrom}`);
+      return;
+    }
+    const metadata = (error as { $metadata?: { httpStatusCode?: number } })
+      ?.$metadata;
+    const errorType = (error as { __type?: string })?.__type;
+    if (metadata?.httpStatusCode === 501 || errorType === 'InternalFailure') {
+      console.warn(
+        "LocalStack SESv2 API isn't available in this environment. Set LOCALSTACK_SKIP_SES=true to suppress this warning.",
+      );
       return;
     }
     throw error;

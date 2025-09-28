@@ -27,6 +27,18 @@ Supporting libraries live under `libs/`:
 ## Environment Variables
 
 Create an `.env` file per service or export the variables in your shell before starting the processes.
+Copy `.env.example` as a starting point for non-LocalStack environments, or `.env.localstack.example` when developing against LocalStack.
+
+### Configuration loading order
+
+The apps use Nest’s `@nestjs/config` module with global settings. On startup they search for environment files in the following order (first file found wins for each variable):
+
+1. `CONFIG_ENV_FILE` (if provided, e.g. `CONFIG_ENV_FILE=.env.production`)
+2. `.env.localstack`
+3. `.env.local`
+4. `.env`
+
+Each service also reads live environment variables, so anything exported in the terminal overrides file-based entries.
 
 | Variable                        | Used by                   | Description                                                                                                                                           |
 | ------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,6 +55,7 @@ Create an `.env` file per service or export the variables in your shell before s
 | `SQS_MAX_MESSAGES`              | persistence, notification | (Optional) Batch size for each poll (default `5`).                                                                                                    |
 | `SQS_WAIT_TIME_SECONDS`         | persistence, notification | (Optional) Long-poll wait time (default `20`).                                                                                                        |
 | `SQS_VISIBILITY_TIMEOUT`        | persistence, notification | (Optional) Visibility timeout for inflight messages (default `60`).                                                                                   |
+| `LOCALSTACK_SKIP_SES`           | bootstrap script          | Set to `true` to skip creating an SES identity when LocalStack SESv2 isn’t available (e.g., Community edition).                                       |
 
 ### Local development with LocalStack
 
@@ -52,6 +65,7 @@ Everything you need to spin up LocalStack and provision the required AWS resourc
 
 ```bash
 cp .env.localstack.example .env.localstack
+cp .env.localstack.example .env
 ```
 
 2. **Bootstrap LocalStack queues, table, and SES identity**:
@@ -60,7 +74,7 @@ cp .env.localstack.example .env.localstack
 npm run localstack:bootstrap
 ```
 
-The bootstrap script waits for LocalStack to become healthy, creates both queues, provisions the DynamoDB table, verifies the SES sender identity, and prints the environment variables you should export.
+The bootstrap script waits for LocalStack to become healthy, creates both queues, provisions the DynamoDB table, and attempts to verify the SES sender identity. If your LocalStack tier doesn’t emulate SESv2, set `LOCALSTACK_SKIP_SES=true` (already enabled in `.env.localstack.example`) to suppress the identity step.
 
 3. **Load the generated environment variables** (zsh/bash):
 

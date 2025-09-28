@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Message } from '@aws-sdk/client-sqs';
 import { SqsMessageHandler } from '@ssut/nestjs-sqs';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
@@ -14,8 +15,14 @@ export class OrderPersistenceService {
   private readonly ordersTableName: string;
   private readonly documentClient: DynamoDBDocumentClient;
 
-  constructor(private readonly awsClientsService: AwsClientsService) {
-    this.ordersTableName = process.env.ORDERS_TABLE_NAME ?? '';
+  constructor(
+    private readonly awsClientsService: AwsClientsService,
+    private readonly configService: ConfigService,
+  ) {
+    this.ordersTableName = this.configService.get<string>(
+      'ORDERS_TABLE_NAME',
+      '',
+    );
     if (!this.ordersTableName) {
       throw new Error(
         'ORDERS_TABLE_NAME env variable is required for OrderPersistenceService.',

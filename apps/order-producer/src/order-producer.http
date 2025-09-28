@@ -1,15 +1,10 @@
-### Create an order
-# Requires the producer app running locally: npm run start:producer
-# VS Code REST Client will treat lines starting with @ as variables
-@host = http://localhost:3000
-@timestamp = {{$isoTimestamp}}
 
-POST {{host}}/orders
+POST http://localhost:3000/orders
 Content-Type: application/json
 Accept: application/json
 
 {
-  "orderId": "demo-{{timestamp}}",
+  "orderId": "demo-1759035874964",
   "customerId": "customer-42",
   "totalAmount": 129.99,
   "currency": "USD",
@@ -24,10 +19,6 @@ Accept: application/json
   "notes": "REST Client sample order",
   "metadata": {
     "channel": "rest-client",
-    "requestedAt": "{{timestamp}}"
+    "requestedAt": "1759035874964"
   }
 }
-
-### Re-send with deterministic IDs
-# Uncomment the line below to force a fixed timestamp across calls
-# @timestamp = 2025-09-28T00:00:00.000Z

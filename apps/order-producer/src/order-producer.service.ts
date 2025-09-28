@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { MessageAttributeValue } from '@aws-sdk/client-sqs';
 import { SqsService } from '@ssut/nestjs-sqs';
 import { randomUUID } from 'crypto';
@@ -13,8 +14,11 @@ export class OrderProducerService {
   private readonly logger = new Logger(OrderProducerService.name);
   private readonly queueConfigs: OrderProducerQueueConfig[];
 
-  constructor(private readonly sqsService: SqsService) {
-    this.queueConfigs = buildOrderProducerQueueConfigs();
+  constructor(
+    private readonly sqsService: SqsService,
+    private readonly configService: ConfigService,
+  ) {
+    this.queueConfigs = buildOrderProducerQueueConfigs(this.configService);
   }
 
   async publishOrder(order: OrderDto): Promise<void> {

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SqsModule } from '@ssut/nestjs-sqs';
 import {
   OrderNotificationService,
@@ -8,10 +9,19 @@ import { AwsClientsModule, resolveQueueUrl } from '@app/aws-clients';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env'].filter(Boolean),
+      expandVariables: true,
+    }),
     AwsClientsModule,
     SqsModule.registerAsync({
-      useFactory: () => {
-        const queueUrl = resolveQueueUrl('ORDER_NOTIFICATION_QUEUE');
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const queueUrl = resolveQueueUrl(
+          configService,
+          'ORDER_NOTIFICATION_QUEUE',
+        );
         if (!queueUrl) {
           throw new Error(
             'ORDER_NOTIFICATION_QUEUE_URL (or ORDER_NOTIFICATION_QUEUE_NAME when AWS_ENDPOINT_URL is set) env variable is required for OrderNotificationService.',
@@ -23,11 +33,15 @@ import { AwsClientsModule, resolveQueueUrl } from '@app/aws-clients';
             {
               name: ORDER_NOTIFICATION_CONSUMER_NAME,
               queueUrl,
-              region: process.env.AWS_REGION ?? 'us-east-1',
-              batchSize: Number(process.env.SQS_MAX_MESSAGES ?? 5),
-              waitTimeSeconds: Number(process.env.SQS_WAIT_TIME_SECONDS ?? 20),
+              region: configService.get<string>('AWS_REGION', 'us-east-1'),
+              batchSize: Number(
+                configService.get<number>('SQS_MAX_MESSAGES', 5),
+              ),
+              waitTimeSeconds: Number(
+                configService.get<number>('SQS_WAIT_TIME_SECONDS', 20),
+              ),
               visibilityTimeout: Number(
-                process.env.SQS_VISIBILITY_TIMEOUT ?? 60,
+                configService.get<number>('SQS_VISIBILITY_TIMEOUT', 60),
               ),
             },
           ],

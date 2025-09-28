@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
@@ -10,8 +11,13 @@ export class AwsClientsService {
   private dynamoDocumentClient?: DynamoDBDocumentClient;
   private sesClient?: SESv2Client;
 
-  private readonly region = process.env.AWS_REGION ?? 'us-east-1';
-  private readonly endpoint = process.env.AWS_ENDPOINT_URL;
+  private readonly region: string;
+  private readonly endpoint?: string;
+
+  constructor(private readonly configService: ConfigService) {
+    this.region = this.configService.get<string>('AWS_REGION', 'us-east-1');
+    this.endpoint = this.configService.get<string>('AWS_ENDPOINT_URL');
+  }
 
   getSqsClient(): SQSClient {
     if (!this.sqsClient) {
