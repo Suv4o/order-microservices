@@ -33,10 +33,8 @@ Copy `.env.example` as a starting point for non-LocalStack environments, or `.en
 
 The apps use Nest’s `@nestjs/config` module with global settings. On startup they search for environment files in the following order (first file found wins for each variable):
 
-1. `CONFIG_ENV_FILE` (if provided, e.g. `CONFIG_ENV_FILE=.env.production`)
-2. `.env.localstack`
-3. `.env.local`
-4. `.env`
+1. `.env.localstack`
+2. `.env`
 
 Each service also reads live environment variables, so anything exported in the terminal overrides file-based entries.
 
@@ -55,7 +53,9 @@ Each service also reads live environment variables, so anything exported in the 
 | `SQS_MAX_MESSAGES`              | persistence, notification | (Optional) Batch size for each poll (default `5`).                                                                                                    |
 | `SQS_WAIT_TIME_SECONDS`         | persistence, notification | (Optional) Long-poll wait time (default `20`).                                                                                                        |
 | `SQS_VISIBILITY_TIMEOUT`        | persistence, notification | (Optional) Visibility timeout for inflight messages (default `60`).                                                                                   |
-| `LOCALSTACK_SKIP_SES`           | bootstrap script          | Set to `true` to skip creating an SES identity when LocalStack SESv2 isn’t available (e.g., Community edition).                                       |
+| `SES_ENDPOINT_URL`              | notification              | Override for the SESv2 client endpoint. Set to `http://localhost:8005` when using `aws-ses-v2-local`.                                                 |
+| `SES_REGION`                    | notification              | Region used by the SESv2 client. Defaults to `AWS_REGION`; use `aws-ses-v2-local` for the local mock server.                                          |
+| `SKIP_SES`                      | notification, bootstrap   | When `true`, skips sending notification emails and suppresses SES identity creation during LocalStack bootstrap.                                      |
 
 ### Local development with LocalStack
 
@@ -74,17 +74,31 @@ cp .env.localstack.example .env
 npm run localstack:bootstrap
 ```
 
-The bootstrap script waits for LocalStack to become healthy, creates both queues, provisions the DynamoDB table, and attempts to verify the SES sender identity. If your LocalStack tier doesn’t emulate SESv2, set `LOCALSTACK_SKIP_SES=true` (already enabled in `.env.localstack.example`) to suppress the identity step.
+The bootstrap script waits for LocalStack to become healthy, creates both queues, provisions the DynamoDB table, and attempts to verify the SES sender identity. If your LocalStack tier doesn’t emulate SESv2, set `SKIP_SES=true` (already enabled in `.env.localstack.example`) to suppress the identity step and rely solely on the local mock server.
 
-3. **Load the generated environment variables** (zsh/bash):
+3. **Start the local SES mock server** in a separate terminal to capture emails:
 
 ```bash
-source scripts/load-localstack-env.sh
+npm run ses-local:start
+```
+
+> The server exposes the SESv2 API at `http://localhost:8005` and a web inbox at the same address. Leave it running while the notification worker is active. If you don’t want to send emails locally, set `SKIP_SES=true` before starting the services.
+
+4. **Load the generated environment variables** (zsh/bash):
+
+```bash
+npm run localstack:env
 ```
 
 > The helper script wraps `set -a; source .env.localstack; set +a` so your current shell inherits every variable. You can pass an alternate file path, e.g. `source scripts/load-localstack-env.sh .env.other`. Running `npm run localstack:env` executes the same helper but, because it spawns a subshell, the exports won’t persist once the command finishes—always `source` it directly when you need the variables in your terminal.
 
-4. **Start the microservices in separate terminals** (after sourcing the env file for each terminal):
+5. **Start the microservices in separate terminals** (after sourcing the env file for each terminal):
+
+6. **Start the local SES mock server** in a separate terminal to capture emails:
+
+```bash
+npm run ses-local:start
+```
 
 ```bash
 npm run start:producer:dev
@@ -92,13 +106,13 @@ npm run start:persistence:dev
 npm run start:notification:dev
 ```
 
-5. **Inspect LocalStack logs** (optional):
+1. **Inspect LocalStack logs** (optional):
 
 ```bash
 npm run localstack:logs
 ```
 
-6. **Shut everything down** when finished:
+7. **Shut everything down** when finished:
 
 ```bash
 npm run localstack:stop
@@ -126,6 +140,9 @@ npm run start:persistence
 
 # Notification worker – polls SQS and sends SES emails
 npm run start:notification
+
+# SES mock server – provides a local SESv2 API and inbox
+npm run ses-local:start
 ```
 
 The producer exposes an injectable `OrderProducerService` with a `publishOrder` method. You can use it from a REPL or small script, e.g.:

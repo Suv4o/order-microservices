@@ -14,7 +14,8 @@ export class OrderNotificationService {
   private readonly logger = new Logger(OrderNotificationService.name);
   private readonly fromAddress: string;
   private readonly recipients: string[];
-  private readonly sesClient: SESv2Client;
+  private readonly sesClient?: SESv2Client;
+  private readonly skipSes: boolean;
 
   constructor(
     private readonly awsClientsService: AwsClientsService,
@@ -52,11 +53,29 @@ export class OrderNotificationService {
       );
     }
 
-    this.sesClient = this.awsClientsService.getSesClient();
+    const skipSesEnv = this.configService.get<string>('SKIP_SES', 'false');
+    this.skipSes = skipSesEnv.toLowerCase() === 'true';
+
+    if (this.skipSes) {
+      this.logger.warn(
+        'SKIP_SES is true. Order notification emails will be skipped.',
+      );
+    } else {
+      this.sesClient = this.awsClientsService.getSesClient();
+    }
   }
 
   @SqsMessageHandler(ORDER_NOTIFICATION_CONSUMER_NAME, false)
   async handleOrderNotification(message: Message): Promise<void> {
+    if (this.skipSes) {
+      this.logger.debug(
+        `Skipping email for message ${
+          message.MessageId ?? 'unknown'
+        } because SKIP_SES is true.`,
+      );
+      return;
+    }
+
     if (!message.Body) {
       this.logger.warn('Received SQS message without a body. Skipping.');
       return;
@@ -84,21 +103,46 @@ export class OrderNotificationService {
       <p><strong>Created at:</strong> ${normalized.createdAtIso}</p>
     `;
 
-    await this.sesClient.send(
-      new SendEmailCommand({
-        FromEmailAddress: this.fromAddress,
-        Destination: { ToAddresses: this.recipients },
-        Content: {
-          Simple: {
-            Subject: { Data: subject },
-            Body: {
-              Text: { Data: textBody },
-              Html: { Data: htmlBody },
+    if (!this.sesClient) {
+      this.logger.error(
+        'SES client is not configured. Ensure SKIP_SES is false and aws-ses-v2-local is running.',
+      );
+      throw new Error('SES client not configured');
+    }
+
+    try {
+      await this.sesClient.send(
+        new SendEmailCommand({
+          FromEmailAddress: this.fromAddress,
+          Destination: { ToAddresses: this.recipients },
+          Content: {
+            Simple: {
+              Subject: { Data: subject },
+              Body: {
+                Text: { Data: textBody },
+                Html: { Data: htmlBody },
+              },
             },
           },
-        },
-      }),
-    );
+        }),
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as { code?: string }).code === 'ECONNREFUSED'
+      ) {
+        this.logger.error(
+          'Failed to reach aws-ses-v2-local. Start it with "npm run ses-local:start" or set SKIP_SES=true to disable email sending.',
+        );
+      } else {
+        this.logger.error(
+          'Failed to send notification email via SES.',
+          error as Error,
+        );
+      }
+      throw error;
+    }
 
     this.logger.log(`Notification email sent for order ${normalized.orderId}.`);
   }

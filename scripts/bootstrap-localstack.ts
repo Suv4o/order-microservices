@@ -26,7 +26,9 @@ const tableName = process.env.ORDERS_TABLE_NAME ?? 'orders-table';
 const notificationEmailFrom =
   process.env.NOTIFICATION_EMAIL_FROM ?? 'sender@example.com';
 const skipSesIdentityBootstrap =
-  (process.env.LOCALSTACK_SKIP_SES ?? '').toLowerCase() === 'true';
+  (process.env.SKIP_SES ?? '').toLowerCase() === 'true';
+const sesEndpoint = process.env.SES_ENDPOINT_URL ?? 'http://localhost:8005';
+const sesRegion = process.env.SES_REGION ?? region;
 
 const clientsConfig = {
   region,
@@ -141,7 +143,7 @@ async function ensureOrdersTable(): Promise<void> {
 async function ensureSesIdentity(): Promise<void> {
   if (skipSesIdentityBootstrap) {
     console.warn(
-      'Skipping SES identity creation because LOCALSTACK_SKIP_SES is set to true.',
+      'Skipping SES identity creation because SKIP_SES is set to true.',
     );
     return;
   }
@@ -169,7 +171,7 @@ async function ensureSesIdentity(): Promise<void> {
     const errorType = (error as { __type?: string })?.__type;
     if (metadata?.httpStatusCode === 501 || errorType === 'InternalFailure') {
       console.warn(
-        "LocalStack SESv2 API isn't available in this environment. Set LOCALSTACK_SKIP_SES=true to suppress this warning.",
+        "LocalStack SESv2 API isn't available in this environment. Set SKIP_SES=true to suppress this warning.",
       );
       return;
     }
@@ -195,6 +197,9 @@ async function main(): Promise<void> {
   console.log(`AWS_ENDPOINT_URL=${endpoint}`);
   console.log(`AWS_ACCESS_KEY_ID=${accessKeyId}`);
   console.log(`AWS_SECRET_ACCESS_KEY=${secretAccessKey}`);
+  console.log(`SES_ENDPOINT_URL=${sesEndpoint}`);
+  console.log(`SES_REGION=${sesRegion}`);
+  console.log(`SKIP_SES=${skipSesIdentityBootstrap}`);
   console.log(`ORDERS_TABLE_NAME=${tableName}`);
   console.log(`ORDER_PERSISTENCE_QUEUE_URL=${persistenceQueueUrl}`);
   if (notificationQueueUrl) {

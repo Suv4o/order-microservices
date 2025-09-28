@@ -26,7 +26,8 @@
     "localstack:logs": "docker compose -f localstack/docker-compose.yml logs -f",
     "localstack:setup": "ts-node --esm scripts/bootstrap-localstack.ts",
     "localstack:bootstrap": "npm run localstack:start && npm run localstack:setup",
-    "localstack:env": "bash scripts/load-localstack-env.sh"
+    "localstack:env": "bash scripts/load-localstack-env.sh",
+    "ses-local:start": "aws-ses-v2-local"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.414.0",
@@ -64,7 +65,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "aws-ses-v2-local": "^2.5.4"
   },
   "jest": {
     "moduleFileExtensions": [
