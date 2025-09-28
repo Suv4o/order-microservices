@@ -1,12 +1,21 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { OrderProducerService } from './order-producer.service';
+import { ensureOrderMessage } from '@app/common-dto';
+import type { OrderDto } from '@app/common-dto';
 
-@Controller()
+@Controller('orders')
 export class OrderProducerController {
   constructor(private readonly orderProducerService: OrderProducerService) {}
 
-  @Get()
-  getHello(): string {
-    return this.orderProducerService.getHello();
+  @Post()
+  async createOrder(
+    @Body() order: OrderDto,
+  ): Promise<{ status: 'accepted'; orderId: string }> {
+    const normalized = ensureOrderMessage(order);
+    await this.orderProducerService.publishOrder(normalized);
+    return {
+      status: 'accepted',
+      orderId: normalized.orderId,
+    };
   }
 }

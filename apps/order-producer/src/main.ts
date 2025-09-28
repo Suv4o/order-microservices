@@ -3,6 +3,6 @@ import { OrderProducerModule } from './order-producer.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(OrderProducerModule);
-  await app.listen(3001);
+  await app.listen(3000);
 }
 void bootstrap();

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  localstack:
+    container_name: order-localstack
+    image: localstack/localstack:latest
+    ports:
+      - '4566:4566'
+      - '4571:4571'
+    environment:
+      - SERVICES=sqs,dynamodb,ses
+      - DEBUG=1
+      - LOCALSTACK_HOST=localhost
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - './volume:/var/lib/localstack'
+      - '/var/run/docker.sock:/var/run/docker.sock'
