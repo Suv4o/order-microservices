@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Message } from '@aws-sdk/client-sqs';
-import { SqsMessageHandler } from '@ssut/nestjs-sqs';
 import { SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { AwsClientsService, resolveQueueUrl } from '@app/aws-clients';
 import { ensureOrderMessage, OrderDto } from '@app/common-dto';
 import type { SESv2Client } from '@aws-sdk/client-sesv2';
+import { sqsPattern } from '@app/sqs-microservice';
 
-export const ORDER_NOTIFICATION_CONSUMER_NAME = 'orderNotificationConsumer';
+export const ORDER_NOTIFICATION_PATTERN = sqsPattern('order-notification');
 
 @Injectable()
 export class OrderNotificationService {
@@ -65,7 +65,6 @@ export class OrderNotificationService {
     }
   }
 
-  @SqsMessageHandler(ORDER_NOTIFICATION_CONSUMER_NAME, false)
   async handleOrderNotification(message: Message): Promise<void> {
     if (this.skipSes) {
       this.logger.debug(

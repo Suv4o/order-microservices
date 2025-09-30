@@ -22,18 +22,14 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@app/aws-clients": [
-        "libs/aws-clients/src"
-      ],
-      "@app/aws-clients/*": [
-        "libs/aws-clients/src/*"
-      ],
-      "@app/common-dto": [
-        "libs/common-dto/src"
-      ],
-      "@app/common-dto/*": [
-        "libs/common-dto/src/*"
-      ]
+      "@app/aws-clients": ["libs/aws-clients/src"],
+      "@app/aws-clients/*": ["libs/aws-clients/src/*"],
+      "@app/common-dto": ["libs/common-dto/src"],
+      "@app/common-dto/*": ["libs/common-dto/src/*"],
+      "@app/sqs-microservice": ["libs/sqs-microservice/src"],
+      "@app/sqs-microservice/*": ["libs/sqs-microservice/src/*"],
+      "@app/common-utils": ["libs/common-utils/src"],
+      "@app/common-utils/*": ["libs/common-utils/src/*"]
     }
   }
 }

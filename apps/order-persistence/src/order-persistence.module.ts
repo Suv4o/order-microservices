@@ -1,11 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SqsModule } from '@ssut/nestjs-sqs';
-import {
-  OrderPersistenceService,
-  ORDER_PERSISTENCE_CONSUMER_NAME,
-} from './order-persistence.service';
-import { AwsClientsModule, resolveQueueUrl } from '@app/aws-clients';
+import { ConfigModule } from '@nestjs/config';
+import { AwsClientsModule } from '@app/aws-clients';
+import { OrderPersistenceService } from './order-persistence.service';
+import { OrderPersistenceController } from './order-persistence.controller';
 
 @Module({
   imports: [
@@ -15,41 +12,8 @@ import { AwsClientsModule, resolveQueueUrl } from '@app/aws-clients';
       expandVariables: true,
     }),
     AwsClientsModule,
-    SqsModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const queueUrl = resolveQueueUrl(
-          configService,
-          'ORDER_PERSISTENCE_QUEUE',
-        );
-        if (!queueUrl) {
-          throw new Error(
-            'ORDER_PERSISTENCE_QUEUE_URL (or ORDER_PERSISTENCE_QUEUE_NAME when AWS_ENDPOINT_URL is set) env variable is required for OrderPersistenceService.',
-          );
-        }
-
-        return {
-          consumers: [
-            {
-              name: ORDER_PERSISTENCE_CONSUMER_NAME,
-              queueUrl,
-              region: configService.get<string>('AWS_REGION', 'us-east-1'),
-              batchSize: Number(
-                configService.get<number>('SQS_MAX_MESSAGES', 5),
-              ),
-              waitTimeSeconds: Number(
-                configService.get<number>('SQS_WAIT_TIME_SECONDS', 20),
-              ),
-              visibilityTimeout: Number(
-                configService.get<number>('SQS_VISIBILITY_TIMEOUT', 60),
-              ),
-            },
-          ],
-        };
-      },
-    }),
   ],
-  controllers: [],
+  controllers: [OrderPersistenceController],
   providers: [OrderPersistenceService],
 })
 export class OrderPersistenceModule {}

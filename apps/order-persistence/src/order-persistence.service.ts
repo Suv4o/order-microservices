@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Message } from '@aws-sdk/client-sqs';
-import { SqsMessageHandler } from '@ssut/nestjs-sqs';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { AwsClientsService } from '@app/aws-clients';
 import { ensureOrderMessage, OrderDto } from '@app/common-dto';
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { sqsPattern } from '@app/sqs-microservice';
 
-export const ORDER_PERSISTENCE_CONSUMER_NAME = 'orderPersistenceConsumer';
+export const ORDER_PERSISTENCE_PATTERN = sqsPattern('order-persistence');
 
 @Injectable()
 export class OrderPersistenceService {
@@ -32,7 +32,6 @@ export class OrderPersistenceService {
     this.documentClient = this.awsClientsService.getDynamoDocumentClient();
   }
 
-  @SqsMessageHandler(ORDER_PERSISTENCE_CONSUMER_NAME, false)
   async handleOrderMessage(message: Message): Promise<void> {
     if (!message.Body) {
       this.logger.warn('Received SQS message without a body. Skipping.');

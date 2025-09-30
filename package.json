@@ -39,6 +39,7 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/microservices": "^11.0.1",
     "@ssut/nestjs-sqs": "^3.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
@@ -91,7 +92,9 @@
     ],
     "moduleNameMapper": {
       "^@app/aws-clients(|/.*)$": "<rootDir>/libs/aws-clients/src/$1",
-      "^@app/common-dto(|/.*)$": "<rootDir>/libs/common-dto/src/$1"
+      "^@app/common-dto(|/.*)$": "<rootDir>/libs/common-dto/src/$1",
+      "^@app/sqs-microservice(|/.*)$": "<rootDir>/libs/sqs-microservice/src/$1",
+      "^@app/common-utils(|/.*)$": "<rootDir>/libs/common-utils/src/$1"
     }
   }
 }

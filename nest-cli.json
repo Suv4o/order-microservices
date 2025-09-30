@@ -26,6 +26,15 @@
         "tsConfigPath": "libs/common-dto/tsconfig.lib.json"
       }
     },
+    "common-utils": {
+      "type": "library",
+      "root": "libs/common-utils",
+      "entryFile": "index",
+      "sourceRoot": "libs/common-utils/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/common-utils/tsconfig.lib.json"
+      }
+    },
     "order-notification": {
       "type": "application",
       "root": "apps/order-notification",
