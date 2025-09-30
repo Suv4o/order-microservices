@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Message } from '@aws-sdk/client-sqs';
 import { SendEmailCommand } from '@aws-sdk/client-sesv2';
-import { AwsClientsService, resolveQueueUrl } from '@app/aws-clients';
+import {
+  AwsClientsService,
+  getOrderNotificationQueueUrl,
+} from '@app/aws-clients';
 import { ensureOrderMessage, OrderDto } from '@app/common-dto';
 import type { SESv2Client } from '@aws-sdk/client-sesv2';
 import { sqsPattern } from '@app/sqs-microservice';
@@ -33,15 +36,7 @@ export class OrderNotificationService {
       .split(',')
       .map((email) => email.trim())
       .filter(Boolean);
-    const resolvedQueueUrl = resolveQueueUrl(
-      this.configService,
-      'ORDER_NOTIFICATION_QUEUE',
-    );
-    if (!resolvedQueueUrl) {
-      throw new Error(
-        'ORDER_NOTIFICATION_QUEUE_URL (or ORDER_NOTIFICATION_QUEUE_NAME when AWS_ENDPOINT_URL is set) env variable is required for OrderNotificationService.',
-      );
-    }
+    getOrderNotificationQueueUrl(this.configService);
     if (!this.fromAddress) {
       throw new Error(
         'NOTIFICATION_EMAIL_FROM env variable is required for OrderNotificationService.',

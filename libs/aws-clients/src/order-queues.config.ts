@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { getSqsPollingSettings } from '@app/common-utils';
 
 export interface OrderProducerQueueConfig {
   name: string;
@@ -34,6 +35,87 @@ export const resolveQueueUrl = (
     buildQueueUrlFromEnv(configService, queueKey)
   );
 };
+
+const resolveQueueUrlOrThrow = (
+  configService: ConfigService,
+  queueKey: string,
+  serviceName: string,
+): string => {
+  const queueUrl = resolveQueueUrl(configService, queueKey);
+  if (!queueUrl) {
+    throw new Error(
+      `${queueKey}_URL (or ${queueKey}_NAME when AWS_ENDPOINT_URL is set) env variable is required for ${serviceName}.`,
+    );
+  }
+
+  return queueUrl;
+};
+
+export interface OrderQueueConsumerOptions {
+  queue: {
+    queueUrl: string;
+    batchSize: number;
+    waitTimeSeconds: number;
+    visibilityTimeout: number;
+  };
+  pollingIntervalMs: number;
+}
+
+const buildOrderQueueConsumerOptions = (
+  configService: ConfigService,
+  queueKey: string,
+  serviceName: string,
+): OrderQueueConsumerOptions => {
+  const queueUrl = resolveQueueUrlOrThrow(configService, queueKey, serviceName);
+  const { batchSize, waitTimeSeconds, visibilityTimeout, errorBackoffMs } =
+    getSqsPollingSettings(configService);
+
+  return {
+    queue: {
+      queueUrl,
+      batchSize,
+      waitTimeSeconds,
+      visibilityTimeout,
+    },
+    pollingIntervalMs: errorBackoffMs,
+  };
+};
+
+export const getOrderPersistenceQueueUrl = (
+  configService: ConfigService,
+): string =>
+  resolveQueueUrlOrThrow(
+    configService,
+    'ORDER_PERSISTENCE_QUEUE',
+    'OrderPersistenceService',
+  );
+
+export const getOrderNotificationQueueUrl = (
+  configService: ConfigService,
+): string =>
+  resolveQueueUrlOrThrow(
+    configService,
+    'ORDER_NOTIFICATION_QUEUE',
+    'OrderNotificationService',
+  );
+
+export const getOrderPersistenceQueueConsumerOptions = (
+  configService: ConfigService,
+): OrderQueueConsumerOptions =>
+  buildOrderQueueConsumerOptions(
+    configService,
+    'ORDER_PERSISTENCE_QUEUE',
+    'OrderPersistenceService',
+  );
+
+export const getOrderNotificationQueueConsumerOptions = (
+  configService: ConfigService,
+): OrderQueueConsumerOptions =>
+  buildOrderQueueConsumerOptions(
+    configService,
+    'ORDER_NOTIFICATION_QUEUE',
+    'OrderNotificationService',
+  );
 
 export const buildOrderProducerQueueConfigs = (
   configService: ConfigService,

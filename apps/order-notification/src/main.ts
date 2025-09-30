@@ -2,36 +2,22 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { OrderNotificationModule } from './order-notification.module';
-import { AwsClientsService, resolveQueueUrl } from '@app/aws-clients';
+import {
+  AwsClientsService,
+  getOrderNotificationQueueConsumerOptions,
+} from '@app/aws-clients';
 import { SqsServer } from '@app/sqs-microservice';
-import { getNumericConfigValue } from '@app/common-utils';
 import { ORDER_NOTIFICATION_PATTERN } from './order-notification.service';
 
 async function bootstrap(): Promise<void> {
   const configService = new ConfigService();
-  const queueUrl = resolveQueueUrl(configService, 'ORDER_NOTIFICATION_QUEUE');
-  if (!queueUrl) {
-    throw new Error(
-      'ORDER_NOTIFICATION_QUEUE_URL (or ORDER_NOTIFICATION_QUEUE_NAME when AWS_ENDPOINT_URL is set) env variable is required for OrderNotificationService.',
-    );
-  }
+  const {
+    queue: { queueUrl, batchSize, waitTimeSeconds, visibilityTimeout },
+    pollingIntervalMs,
+  } = getOrderNotificationQueueConsumerOptions(configService);
 
   const awsClientsService = new AwsClientsService(configService);
   const sqsClient = awsClientsService.getSqsClient();
-
-  const batchSize = getNumericConfigValue(configService, 'SQS_MAX_MESSAGES', 5);
-  const waitTimeSeconds = getNumericConfigValue(
-    configService,
-    'SQS_WAIT_TIME_SECONDS',
-  );
-  const visibilityTimeout = getNumericConfigValue(
-    configService,
-    'SQS_VISIBILITY_TIMEOUT',
-  );
-  const errorBackoffMs = getNumericConfigValue(
-    configService,
-    'SQS_ERROR_BACKOFF_MS',
-  );
 
   const app = await NestFactory.createMicroservice(OrderNotificationModule, {
     strategy: new SqsServer(
@@ -45,7 +31,7 @@ async function bootstrap(): Promise<void> {
             visibilityTimeout,
           },
         ],
-        pollingIntervalMs: errorBackoffMs,
+        pollingIntervalMs,
       },
       sqsClient,
     ),
