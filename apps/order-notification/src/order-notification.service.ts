@@ -8,7 +8,7 @@ import {
 } from '@app/aws-clients';
 import { ensureOrderMessage, OrderDto } from '@app/common-dto';
 import type { SESv2Client } from '@aws-sdk/client-sesv2';
-import { sqsPattern } from '@app/sqs-microservice';
+import { sqsPattern } from '@suv4o/nestjs-sqs';
 
 export const ORDER_NOTIFICATION_PATTERN = sqsPattern('order-notification');
 

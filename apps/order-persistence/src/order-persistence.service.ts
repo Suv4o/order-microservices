@@ -5,7 +5,7 @@ import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { AwsClientsService } from '@app/aws-clients';
 import { ensureOrderMessage, OrderDto } from '@app/common-dto';
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { sqsPattern } from '@app/sqs-microservice';
+import { sqsPattern } from '@suv4o/nestjs-sqs';
 
 export const ORDER_PERSISTENCE_PATTERN = sqsPattern('order-persistence');
 

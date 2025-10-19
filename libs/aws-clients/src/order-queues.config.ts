@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { getSqsPollingSettings } from '@app/common-utils';
+import { buildSqsMicroserviceOptionsFromEnv } from '@suv4o/nestjs-sqs';
 
 export interface OrderProducerQueueConfig {
   name: string;
@@ -51,36 +51,6 @@ const resolveQueueUrlOrThrow = (
   return queueUrl;
 };
 
-export interface OrderQueueConsumerOptions {
-  queue: {
-    queueUrl: string;
-    batchSize: number;
-    waitTimeSeconds: number;
-    visibilityTimeout: number;
-  };
-  pollingIntervalMs: number;
-}
-
-const buildOrderQueueConsumerOptions = (
-  configService: ConfigService,
-  queueKey: string,
-  serviceName: string,
-): OrderQueueConsumerOptions => {
-  const queueUrl = resolveQueueUrlOrThrow(configService, queueKey, serviceName);
-  const { batchSize, waitTimeSeconds, visibilityTimeout, errorBackoffMs } =
-    getSqsPollingSettings(configService);
-
-  return {
-    queue: {
-      queueUrl,
-      batchSize,
-      waitTimeSeconds,
-      visibilityTimeout,
-    },
-    pollingIntervalMs: errorBackoffMs,
-  };
-};
-
 export const getOrderPersistenceQueueUrl = (
   configService: ConfigService,
 ): string =>
@@ -99,59 +69,46 @@ export const getOrderNotificationQueueUrl = (
     'OrderNotificationService',
   );
 
-export const getOrderPersistenceQueueConsumerOptions = (
-  configService: ConfigService,
-): OrderQueueConsumerOptions =>
-  buildOrderQueueConsumerOptions(
-    configService,
-    'ORDER_PERSISTENCE_QUEUE',
-    'OrderPersistenceService',
-  );
-
-export const getOrderNotificationQueueConsumerOptions = (
-  configService: ConfigService,
-): OrderQueueConsumerOptions =>
-  buildOrderQueueConsumerOptions(
-    configService,
-    'ORDER_NOTIFICATION_QUEUE',
-    'OrderNotificationService',
-  );
-
 export const buildOrderProducerQueueConfigs = (
   configService: ConfigService,
 ): OrderProducerQueueConfig[] => {
   const region = configService.get<string>('AWS_REGION', 'us-east-1');
-  const persistenceQueueUrl = resolveQueueUrl(
-    configService,
-    'ORDER_PERSISTENCE_QUEUE',
-  );
-  if (!persistenceQueueUrl) {
-    throw new Error(
-      'ORDER_PERSISTENCE_QUEUE_URL env variable is required for order queue configuration.',
-    );
-  }
 
-  const configs: OrderProducerQueueConfig[] = [
+  const definitions: Array<{
+    queueKey: string;
+    producerName: string;
+  }> = [
     {
-      name: ORDER_PERSISTENCE_PRODUCER,
-      queueUrl: persistenceQueueUrl,
-      isFifo: persistenceQueueUrl.endsWith('.fifo'),
-      region,
+      queueKey: 'ORDER_PERSISTENCE_QUEUE',
+      producerName: ORDER_PERSISTENCE_PRODUCER,
     },
   ];
 
-  const notificationQueueUrl = resolveQueueUrl(
-    configService,
-    'ORDER_NOTIFICATION_QUEUE',
-  );
-  if (notificationQueueUrl) {
-    configs.push({
-      name: ORDER_NOTIFICATION_PRODUCER,
-      queueUrl: notificationQueueUrl,
-      isFifo: notificationQueueUrl.endsWith('.fifo'),
-      region,
+  const hasNotificationQueue =
+    Boolean(configService.get<string>('ORDER_NOTIFICATION_QUEUE_URL')) ||
+    Boolean(configService.get<string>('ORDER_NOTIFICATION_QUEUE_NAME'));
+
+  if (hasNotificationQueue) {
+    definitions.push({
+      queueKey: 'ORDER_NOTIFICATION_QUEUE',
+      producerName: ORDER_NOTIFICATION_PRODUCER,
     });
   }
 
-  return configs;
+  const sqsOptions = buildSqsMicroserviceOptionsFromEnv(
+    definitions.map(({ queueKey }) => ({
+      pattern: { cmd: queueKey.toLowerCase() },
+      queueKey,
+    })),
+  );
+
+  return sqsOptions.queues.map((queue, index) => {
+    const { producerName } = definitions[index];
+    return {
+      name: producerName,
+      queueUrl: queue.queueUrl,
+      isFifo: queue.queueUrl.endsWith('.fifo'),
+      region,
+    };
+  });
 };

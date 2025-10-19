@@ -2,39 +2,41 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { OrderPersistenceModule } from './order-persistence.module';
+import { AwsClientsService } from '@app/aws-clients';
+import { getSqsPollingSettings } from '@app/common-utils';
 import {
-  AwsClientsService,
-  getOrderPersistenceQueueConsumerOptions,
-} from '@app/aws-clients';
-import { SqsServer } from '@app/sqs-microservice';
+  SqsServer,
+  buildSqsMicroserviceOptionsFromEnv,
+} from '@suv4o/nestjs-sqs';
 import { ORDER_PERSISTENCE_PATTERN } from './order-persistence.service';
 
 async function bootstrap(): Promise<void> {
   const configService = new ConfigService();
-  const {
-    queue: { queueUrl, batchSize, waitTimeSeconds, visibilityTimeout },
-    pollingIntervalMs,
-  } = getOrderPersistenceQueueConsumerOptions(configService);
-
+  const pollingSettings = getSqsPollingSettings(configService);
   const awsClientsService = new AwsClientsService(configService);
   const sqsClient = awsClientsService.getSqsClient();
 
-  const app = await NestFactory.createMicroservice(OrderPersistenceModule, {
-    strategy: new SqsServer(
+  const sqsOptions = buildSqsMicroserviceOptionsFromEnv(
+    [
       {
-        queues: [
-          {
-            pattern: ORDER_PERSISTENCE_PATTERN,
-            queueUrl,
-            batchSize,
-            waitTimeSeconds,
-            visibilityTimeout,
-          },
-        ],
-        pollingIntervalMs,
+        pattern: ORDER_PERSISTENCE_PATTERN,
+        queueKey: 'ORDER_PERSISTENCE_QUEUE',
+        defaults: {
+          batchSize: pollingSettings.batchSize,
+          waitTimeSeconds: pollingSettings.waitTimeSeconds,
+          visibilityTimeout: pollingSettings.visibilityTimeout,
+        },
       },
-      sqsClient,
-    ),
+    ],
+    {
+      defaults: {
+        pollingIntervalMs: pollingSettings.errorBackoffMs,
+      },
+    },
+  );
+
+  const app = await NestFactory.createMicroservice(OrderPersistenceModule, {
+    strategy: new SqsServer(sqsOptions, sqsClient),
   });
 
   await app.listen();

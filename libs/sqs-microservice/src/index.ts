@@ -1,5 +1,1 @@
-export * from './sqs.context';
-export * from './sqs.decorator';
-export * from './sqs.server';
-export * from './sqs.types';
-export * from './utils';
+export * from '@suv4o/nestjs-sqs';
