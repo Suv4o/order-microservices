@@ -1,24 +1,31 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 import type { MessageAttributeValue } from '@aws-sdk/client-sqs';
-import { SqsService } from '@ssut/nestjs-sqs';
 import { randomUUID } from 'crypto';
 import { ensureOrderMessage, OrderDto } from '@app/common-dto';
+import type { SqsOutboundMessage } from '@suv4o/nestjs-sqs';
 import {
   buildOrderProducerQueueConfigs,
   type OrderProducerQueueConfig,
 } from '@app/aws-clients';
+import { ORDER_SQS_CLIENT_TOKEN } from './order-producer.tokens';
 
 @Injectable()
-export class OrderProducerService {
+export class OrderProducerService implements OnModuleInit {
   private readonly logger = new Logger(OrderProducerService.name);
   private readonly queueConfigs: OrderProducerQueueConfig[];
 
   constructor(
-    private readonly sqsService: SqsService,
+    @Inject(ORDER_SQS_CLIENT_TOKEN) private readonly sqsClient: ClientProxy,
     private readonly configService: ConfigService,
   ) {
     this.queueConfigs = buildOrderProducerQueueConfigs(this.configService);
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.sqsClient.connect();
   }
 
   async publishOrder(order: OrderDto): Promise<void> {
@@ -40,8 +47,7 @@ export class OrderProducerService {
 
     const results = await Promise.allSettled(
       this.queueConfigs.map(async (config) => {
-        await this.sqsService.send(config.name, {
-          id: randomUUID(),
+        const message: SqsOutboundMessage<OrderDto> = {
           body: normalized,
           messageAttributes,
           ...(config.isFifo
@@ -50,7 +56,11 @@ export class OrderProducerService {
                 deduplicationId: randomUUID(),
               }
             : {}),
-        });
+        };
+
+        // Use emit for fire-and-forget messaging
+        await firstValueFrom(this.sqsClient.emit(config.pattern, message));
+
         this.logger.log(
           `Order ${normalized.orderId} published to ${config.queueUrl}`,
         );

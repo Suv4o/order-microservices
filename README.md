@@ -1,6 +1,6 @@
 # Order Microservices
 
-Event-driven microservices for managing orders on AWS using NestJS, `@ssut/nestjs-sqs`, and the AWS SDK v3. The system is composed of three independent apps that communicate exclusively through Amazon SQS queues plus a shared set of utility libraries.
+Event-driven microservices for managing orders on AWS using NestJS, `@suv4o/nestjs-sqs`, and the AWS SDK v3. The system is composed of three independent apps that communicate exclusively through Amazon SQS queues plus a shared set of utility libraries.
 
 ## Architecture at a Glance
 
@@ -15,7 +15,9 @@ Supporting libraries live under `libs/`:
 - `@app/common-dto` — shared DTOs and helpers, e.g. `ensureOrderMessage` used by every service before emitting or processing an order.
 - `@app/aws-clients` — lazily-instantiated singletons for SQS, DynamoDB DocumentClient, and SESv2 so each service reuses the same AWS SDK clients.
 
-> **Heads-up:** Only the order producer exposes an HTTP listener (port `3000`) so you can submit orders via REST. The persistence and notification workers bootstrap headless Nest application contexts and respond solely to SQS events registered through `@ssut/nestjs-sqs`.
+> **Heads-up:** Only the order producer exposes an HTTP listener (port `3000`) so you can submit orders via REST. The persistence and notification workers bootstrap headless Nest application contexts and respond solely to SQS events registered through `@suv4o/nestjs-sqs`.
+
+See `nestjs-sqs.md` for a standalone guide on adopting `@suv4o/nestjs-sqs` in new projects.
 
 ## Prerequisites
 

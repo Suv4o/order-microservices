@@ -1,11 +1,15 @@
 import { ConfigService } from '@nestjs/config';
-import { buildSqsMicroserviceOptionsFromEnv } from '@suv4o/nestjs-sqs';
+import {
+  buildSqsMicroserviceOptionsFromEnv,
+  sqsPattern,
+} from '@suv4o/nestjs-sqs';
 
 export interface OrderProducerQueueConfig {
   name: string;
   queueUrl: string;
   isFifo: boolean;
   region: string;
+  pattern: ReturnType<typeof sqsPattern>;
 }
 
 export const ORDER_PERSISTENCE_PRODUCER = 'orderPersistenceProducer';
@@ -77,10 +81,12 @@ export const buildOrderProducerQueueConfigs = (
   const definitions: Array<{
     queueKey: string;
     producerName: string;
+    pattern: ReturnType<typeof sqsPattern>;
   }> = [
     {
       queueKey: 'ORDER_PERSISTENCE_QUEUE',
       producerName: ORDER_PERSISTENCE_PRODUCER,
+      pattern: sqsPattern('order-persistence'),
     },
   ];
 
@@ -92,23 +98,25 @@ export const buildOrderProducerQueueConfigs = (
     definitions.push({
       queueKey: 'ORDER_NOTIFICATION_QUEUE',
       producerName: ORDER_NOTIFICATION_PRODUCER,
+      pattern: sqsPattern('order-notification'),
     });
   }
 
   const sqsOptions = buildSqsMicroserviceOptionsFromEnv(
-    definitions.map(({ queueKey }) => ({
-      pattern: { cmd: queueKey.toLowerCase() },
+    definitions.map(({ queueKey, pattern }) => ({
+      pattern,
       queueKey,
     })),
   );
 
   return sqsOptions.queues.map((queue, index) => {
-    const { producerName } = definitions[index];
+    const { producerName, pattern } = definitions[index];
     return {
       name: producerName,
       queueUrl: queue.queueUrl,
       isFifo: queue.queueUrl.endsWith('.fifo'),
       region,
+      pattern,
     };
   });
 };

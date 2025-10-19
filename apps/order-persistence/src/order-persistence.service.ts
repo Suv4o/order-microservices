@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Message } from '@aws-sdk/client-sqs';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { AwsClientsService } from '@app/aws-clients';
 import { ensureOrderMessage, OrderDto } from '@app/common-dto';
@@ -32,23 +31,7 @@ export class OrderPersistenceService {
     this.documentClient = this.awsClientsService.getDynamoDocumentClient();
   }
 
-  async handleOrderMessage(message: Message): Promise<void> {
-    if (!message.Body) {
-      this.logger.warn('Received SQS message without a body. Skipping.');
-      return;
-    }
-
-    let order: OrderDto;
-    try {
-      order = JSON.parse(message.Body) as OrderDto;
-    } catch (error) {
-      this.logger.error(
-        `Failed to parse order message ${message.MessageId ?? 'unknown'}.`,
-        error as Error,
-      );
-      throw error;
-    }
-
+  async handleOrderMessage(order: OrderDto): Promise<void> {
     const normalized = ensureOrderMessage(order);
 
     await this.documentClient.send(

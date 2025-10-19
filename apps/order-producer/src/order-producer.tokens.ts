@@ -1,0 +1,1 @@
+export const ORDER_SQS_CLIENT_TOKEN = Symbol('ORDER_SQS_CLIENT_TOKEN');

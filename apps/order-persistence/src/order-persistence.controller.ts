@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
-import type { Message } from '@aws-sdk/client-sqs';
+import type { OrderDto } from '@app/common-dto';
 import {
   OrderPersistenceService,
   ORDER_PERSISTENCE_PATTERN,
@@ -13,7 +13,7 @@ export class OrderPersistenceController {
   ) {}
 
   @MessagePattern(ORDER_PERSISTENCE_PATTERN)
-  async handleMessage(message: Message): Promise<void> {
-    await this.orderPersistenceService.handleOrderMessage(message);
+  async handleMessage(order: OrderDto): Promise<void> {
+    await this.orderPersistenceService.handleOrderMessage(order);
   }
 }

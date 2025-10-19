@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Message } from '@aws-sdk/client-sqs';
 import { SendEmailCommand } from '@aws-sdk/client-sesv2';
 import {
   AwsClientsService,
@@ -60,30 +59,10 @@ export class OrderNotificationService {
     }
   }
 
-  async handleOrderNotification(message: Message): Promise<void> {
+  async handleOrderNotification(order: OrderDto): Promise<void> {
     if (this.skipSes) {
-      this.logger.debug(
-        `Skipping email for message ${
-          message.MessageId ?? 'unknown'
-        } because SKIP_SES is true.`,
-      );
+      this.logger.debug('Skipping email because SKIP_SES is true.');
       return;
-    }
-
-    if (!message.Body) {
-      this.logger.warn('Received SQS message without a body. Skipping.');
-      return;
-    }
-
-    let order: OrderDto;
-    try {
-      order = JSON.parse(message.Body) as OrderDto;
-    } catch (error) {
-      this.logger.error(
-        `Failed to parse notification message ${message.MessageId ?? 'unknown'}.`,
-        error as Error,
-      );
-      throw error;
     }
 
     const normalized = ensureOrderMessage(order);

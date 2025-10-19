@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
-import type { Message } from '@aws-sdk/client-sqs';
+import type { OrderDto } from '@app/common-dto';
 import {
   OrderNotificationService,
   ORDER_NOTIFICATION_PATTERN,
@@ -13,8 +13,8 @@ export class OrderNotificationController {
   ) {}
 
   @MessagePattern(ORDER_NOTIFICATION_PATTERN)
-  async handleMessage(message: Message): Promise<void> {
-    await this.orderNotificationService.handleOrderNotification(message);
+  async handleMessage(order: OrderDto): Promise<void> {
+    await this.orderNotificationService.handleOrderNotification(order);
   }
 }
 export {};
